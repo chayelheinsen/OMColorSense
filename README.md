@@ -1,6 +1,6 @@
 # Forked from [OMColorSense](https://github.com/omz/ColorSense-for-Xcode)
 This fork enables color sense for [UIColor colorWithHex:@"ff00ad"];
-* Currently, OMColorSense will only sense hex codes of 6 or 8 in length. ie ff00ad (pink) and ff00adff (a light blue)
+* OMColorSense will sense hex codes of 3,4,6 or 8 in length. i.e. ff00ad (pink) and ff00adff (a light blue)
 Apple does not provide this method but you can implement it yourself:
 
 ```objc
