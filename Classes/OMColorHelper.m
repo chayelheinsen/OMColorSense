@@ -57,7 +57,7 @@
 		_constantColorRegex = [NSRegularExpression regularExpressionWithPattern:@"\\[\\s*(UI|NS)Color\\s+(black|darkGray|lightGray|white|gray|red|green|blue|cyan|yellow|magenta|orange|purple|brown|clear)Color\\s*\\]" options:0 error:NULL];
         
         
-        _hexColorRegex = [NSRegularExpression regularExpressionWithPattern:@"\\[UIColor\\s*colorWithHex:@\"(?:#)?(?:[0-9a-fA-F]{2}){3,4}\"\\]" options:0 error:NULL];
+        _hexColorRegex = [NSRegularExpression regularExpressionWithPattern:@"\\[(UI|NS)Color\\s*colorWithHex:@\"(?:#)?(?:[0-9a-fA-F]{2}){2,4}|(?:#)?(?:[0-9a-fA-F]{1}){2,4}\"\\]" options:0 error:NULL];
 	}
 	return self;
 }
