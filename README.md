@@ -1,3 +1,6 @@
+# Forked from [OMColorSense](https://github.com/omz/ColorSense-for-Xcode)
+This fork enables color sense for [UIColor colorWithHex:@"f00ad"];
+
 # ColorSense for Xcode
 
 ## Overview
@@ -11,8 +14,6 @@ This is where ColorSense comes in: When you put the caret on one of your colors,
 The plugin also adds some items to the _Edit_ menu to insert colors and to disable color highlighting temporarily. These menu items have no keyboard shortcuts by default, but you can set them via the system's keyboard preferences (Xcode's own preferences won't show them).
 
 **[Watch Demo Video (YouTube)](http://www.youtube.com/watch?v=eblRfDQM0Go)**
-
-I'm [@olemoritz](http://twitter.com/olemoritz) on Twitter.
 
 <a href="http://flattr.com/thing/879121/omzColorSense-for-Xcode-on-GitHub" target="_blank">
 <img src="http://api.flattr.com/button/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" /></a>
