@@ -12,6 +12,7 @@
 
 #define kOMColorHelperHighlightingDisabled	@"OMColorHelperHighlightingDisabled"
 #define kOMColorHelperInsertionMode			@"OMColorHelperInsertionMode"
+#define kOMColorHelperCode                  @"OMColorHelperCode"
 
 @implementation OMColorHelper
 
@@ -83,10 +84,22 @@
 		[[colorInsertionModeItem submenu] addItem:colorInsertionModeUIItem];
 		[[colorInsertionModeItem submenu] addItem:colorInsertionModeNSItem];
 		[[editMenuItem submenu] addItem:colorInsertionModeItem];
+        
+        NSMenuItem *colorInsertionCodeItem = [[NSMenuItem alloc] initWithTitle:@"Color Insertion Code" action:nil keyEquivalent:@""];
+        NSMenuItem *colorInsertionCodeHexItem = [[NSMenuItem alloc] initWithTitle:@"[UIColor colorWithHex:@\"ff00ad\"]" action:@selector(selectHexColorCodeMode:) keyEquivalent:@""];
+        [colorInsertionCodeHexItem setTarget:self];
+        NSMenuItem *colorInsertionCodeOtherItem = [[NSMenuItem alloc] initWithTitle:@"[UIColor colorWithRed:0.5 green:0.4 blue:0.1]" action:@selector(selectOtherColorCodeMode:) keyEquivalent:@""];
+        [colorInsertionCodeOtherItem setTarget:self];
+        
+        NSMenu *colorInsertionCodeMenu = [[NSMenu alloc] initWithTitle:@"Color Insertion Code"];
+        [colorInsertionCodeItem setSubmenu:colorInsertionCodeMenu];
+        [[colorInsertionCodeItem submenu] addItem:colorInsertionCodeHexItem];
+        [[colorInsertionCodeItem submenu] addItem:colorInsertionCodeOtherItem];
+        [[editMenuItem submenu] addItem:colorInsertionCodeItem];
 		
-		NSMenuItem *insertColorMenuItem = [[NSMenuItem alloc] initWithTitle:@"Insert Color..." action:@selector(insertColor:) keyEquivalent:@""];
+        NSMenuItem *insertColorMenuItem = [[NSMenuItem alloc] initWithTitle:@"Insert Color..." action:@selector(insertColor:) keyEquivalent:@"i"];
 		[insertColorMenuItem setTarget:self];
-		[[editMenuItem submenu] addItem:insertColorMenuItem];
+        [[editMenuItem submenu] addItem:insertColorMenuItem];
 	}
 	
 	BOOL highlightingEnabled = ![[NSUserDefaults standardUserDefaults] boolForKey:kOMColorHelperHighlightingDisabled];
@@ -110,7 +123,11 @@
 		[menuItem setState:[[NSUserDefaults standardUserDefaults] integerForKey:kOMColorHelperInsertionMode] == 1 ? NSOnState : NSOffState];
 	} else if ([menuItem action] == @selector(selectUIColorInsertionMode:)) {
 		[menuItem setState:[[NSUserDefaults standardUserDefaults] integerForKey:kOMColorHelperInsertionMode] == 0 ? NSOnState : NSOffState];
-	}
+    } else if ([menuItem action] == @selector(selectHexColorCodeMode:)) {
+        [menuItem setState:[[NSUserDefaults standardUserDefaults] integerForKey:kOMColorHelperCode] == 1 ? NSOnState : NSOffState];
+    } else if ([menuItem action] == @selector(selectOtherColorCodeMode:)) {
+        [menuItem setState:[[NSUserDefaults standardUserDefaults] integerForKey:kOMColorHelperCode] == 0 ? NSOnState : NSOffState];
+    }
 	return YES;
 }
 
@@ -122,6 +139,14 @@
 - (void)selectUIColorInsertionMode:(id)sender
 {
 	[[NSUserDefaults standardUserDefaults] setInteger:0 forKey:kOMColorHelperInsertionMode];
+}
+
+- (void)selectHexColorCodeMode:(id)sender {
+    [[NSUserDefaults standardUserDefaults] setInteger:1 forKey:kOMColorHelperCode];
+}
+
+- (void)selectOtherColorCodeMode:(id)sender {
+    [[NSUserDefaults standardUserDefaults] setInteger:0 forKey:kOMColorHelperCode];
 }
 
 - (void)toggleColorHighlightingEnabled:(id)sender
@@ -171,18 +196,28 @@
 			return;
 		}
 	}
+    
 	if ([[NSUserDefaults standardUserDefaults] boolForKey:kOMColorHelperHighlightingDisabled]) {
 		//Inserting a color implicitly activates color highlighting:
 		[[NSUserDefaults standardUserDefaults] setBool:NO forKey:kOMColorHelperHighlightingDisabled];
 		[self activateColorHighlighting];
 	}
+    
 	[self.textView.undoManager beginUndoGrouping];
-	NSInteger insertionMode = [[NSUserDefaults standardUserDefaults] integerForKey:kOMColorHelperInsertionMode];
-	if (insertionMode == 0) {
+	
+    NSInteger insertionMode = [[NSUserDefaults standardUserDefaults] integerForKey:kOMColorHelperInsertionMode];
+    NSInteger insertionCode = [[NSUserDefaults standardUserDefaults] integerForKey:kOMColorHelperCode];
+    
+	if (insertionMode == 0 && insertionCode == 0) {
 		[self.textView insertText:@"[UIColor colorWithRed:1.0 green:0.0 blue:0.0 alpha:1.0]" replacementRange:self.textView.selectedRange];
-	} else {
+	} else if (insertionMode == 1 && insertionCode == 0) {
 		[self.textView insertText:@"[NSColor colorWithCalibratedRed:1.0 green:0.0 blue:0.0 alpha:1.0]" replacementRange:self.textView.selectedRange];
-	}
+    } else if ((insertionMode == 0 && insertionCode == 1)) {
+        [self.textView insertText:@"[UIColor colorWithHex:@\"ff0000\"]" replacementRange:self.textView.selectedRange];
+    } else if (insertionMode == 1 && insertionCode == 1) {
+        [self.textView insertText:@"[NSColor colorWithHex:@\"ff0000\"]" replacementRange:self.textView.selectedRange];
+    }
+    
 	[self.textView.undoManager endUndoGrouping];
 	[self performSelector:@selector(activateColorWell) withObject:nil afterDelay:0.0];
 }
@@ -264,7 +299,15 @@
 	if (self.selectedColorRange.location == NSNotFound) {
 		return;
 	}
-	NSString *colorString = [self colorStringForColor:self.colorWell.color withType:self.selectedColorType];
+    
+    NSString *colorString;
+    
+    if ([[NSUserDefaults standardUserDefaults] integerForKey:kOMColorHelperCode] == 1) {
+        colorString = [self colorStringForColor:self.colorWell.color withType:OMColorTypeUIHex];
+    } else {
+        colorString = [self colorStringForColor:self.colorWell.color withType:self.selectedColorType];
+    }
+    
 	if (colorString) {
 		[self.textView.undoManager beginUndoGrouping];
 		[self.textView insertText:colorString replacementRange:self.selectedColorRange];
@@ -497,18 +540,22 @@
 					colorString = [NSString stringWithFormat:@"[UIColor colorWithWhite:%.3f alpha:%.3f]", red, alpha];
 				} else if (colorType == OMColorTypeUIRGBAInit || colorType == OMColorTypeUIWhiteInit) {
 					colorString = [NSString stringWithFormat:@"[[UIColor alloc] initWithWhite:%.3f alpha:%.3f]", red, alpha];
-				}
+                } else if (colorType == OMColorTypeUIHex) {
+                    colorString = [NSString stringWithFormat:@"[UIColor colorWithHex:@\"%@\"]", [OMColorHelper hexCodeFromColor:color]];
+                }
 				else if (colorType == OMColorTypeNSConstant || colorType == OMColorTypeNSRGBACalibrated || colorType == OMColorTypeNSWhiteCalibrated) {
 					colorString = [NSString stringWithFormat:@"[NSColor colorWithCalibratedWhite:%.3f alpha:%.3f]", red, alpha];
 				} else if (colorType == OMColorTypeNSRGBADevice || colorType == OMColorTypeNSWhiteDevice) {
 					colorString = [NSString stringWithFormat:@"[NSColor colorWithDeviceWhite:%.3f alpha:%.3f]", red, alpha];
-				}
+                } 
 			} else {
 				if (colorType == OMColorTypeUIRGBA || colorType == OMColorTypeUIWhite || colorType == OMColorTypeUIConstant) {
 					colorString = [NSString stringWithFormat:@"[UIColor colorWithRed:%.3f green:%.3f blue:%.3f alpha:%.3f]", red, green, blue, alpha];
 				} else if (colorType == OMColorTypeUIRGBAInit || colorType == OMColorTypeUIWhiteInit) {
 					colorString = [NSString stringWithFormat:@"[[UIColor alloc] initWithRed:%.3f green:%.3f blue:%.3f alpha:%.3f]", red, green, blue, alpha];
-				}
+                } else if (colorType == OMColorTypeUIHex) {
+                    colorString = [NSString stringWithFormat:@"[UIColor colorWithHex:@\"%@\"]", [OMColorHelper hexCodeFromColor:color]];
+                }
 				else if (colorType == OMColorTypeNSConstant || colorType == OMColorTypeNSRGBACalibrated || colorType == OMColorTypeNSWhiteCalibrated) {
 					colorString = [NSString stringWithFormat:@"[NSColor colorWithCalibratedRed:%.3f green:%.3f blue:%.3f alpha:%.3f]", red, green, blue, alpha];
 				} else if (colorType == OMColorTypeNSRGBADevice || colorType == OMColorTypeNSWhiteDevice) {
@@ -530,7 +577,7 @@
 + (NSColor *)colorWithHex:(NSString *)hexString {
     
     // We can accept a hex string with or without #
-    NSString *colorString = [[hexString stringByReplacingOccurrencesOfString: @"#" withString: @""] uppercaseString];
+    NSString *colorString = [[hexString stringByReplacingOccurrencesOfString:@"#" withString:@""] uppercaseString];
     
     CGFloat alpha = 0.0, red = 0.0, blue = 0.0, green = 0.0;
     
@@ -583,9 +630,22 @@
     
     unsigned hexComponent;
     
-    [[NSScanner scannerWithString: fullHex] scanHexInt: &hexComponent];
+    [[NSScanner scannerWithString:fullHex] scanHexInt:&hexComponent];
     
     return hexComponent / 255.0;
+}
+
++ (NSString *)hexCodeFromColor:(NSColor *)color {
+    CGFloat red = -1.0; CGFloat green = -1.0; CGFloat blue = -1.0; CGFloat alpha = -1.0;
+    [color getRed:&red green:&green blue:&blue alpha:&alpha];
+    
+    red *= 255;
+    green *= 255;
+    blue *= 255;
+    alpha *= 255;
+    
+    NSString *hexString = [NSString stringWithFormat:@"#%02x%02x%02x%02x", ((int)alpha),((int)red),((int)green),((int)blue)];
+    return hexString;
 }
 
 @end
